@@ -1,0 +1,10 @@
+torch
+numpy
+pandas
+scikit-learn
+xgboost
+matplotlib
+seaborn
+jupyter
+tqdm
+pip freeze > requirements.txt
