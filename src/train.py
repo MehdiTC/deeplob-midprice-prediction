@@ -104,6 +104,7 @@ def train_neural(
     patience: int = 20,
     lr: float = 0.01,
     eps: float = 1.0,
+    class_weights: Optional[torch.Tensor] = None,
     device: Optional[torch.device] = None,
     verbose: bool = True,
 ) -> tuple[dict, dict]:
@@ -118,7 +119,8 @@ def train_neural(
     model = model.to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, eps=eps)
-    criterion = nn.CrossEntropyLoss()
+    weight = class_weights.to(device) if class_weights is not None else None
+    criterion = nn.CrossEntropyLoss(weight=weight)
     stopper = EarlyStopping(patience=patience)
     history: dict[str, list] = {"train_loss": [], "val_loss": [], "val_f1": []}
 
