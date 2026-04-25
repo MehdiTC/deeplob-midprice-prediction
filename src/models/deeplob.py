@@ -25,19 +25,20 @@ class ConvBlock(nn.Module):
         super().__init__()
         lrelu = lambda: nn.LeakyReLU(negative_slope=0.01)
 
+        bn = lambda: nn.BatchNorm2d(16)
         self.layers = nn.Sequential(
             # Group 1
-            nn.Conv2d(1,  16, kernel_size=(1, 2), stride=(1, 2)), lrelu(),
-            nn.Conv2d(16, 16, kernel_size=(4, 1), padding="same"), lrelu(),
-            nn.Conv2d(16, 16, kernel_size=(4, 1), padding="same"), lrelu(),
+            nn.Conv2d(1,  16, kernel_size=(1, 2), stride=(1, 2)), lrelu(), bn(),
+            nn.Conv2d(16, 16, kernel_size=(4, 1), padding="same"), lrelu(), bn(),
+            nn.Conv2d(16, 16, kernel_size=(4, 1), padding="same"), lrelu(), bn(),
             # Group 2
-            nn.Conv2d(16, 16, kernel_size=(1, 2), stride=(1, 2)), lrelu(),
-            nn.Conv2d(16, 16, kernel_size=(4, 1), padding="same"), lrelu(),
-            nn.Conv2d(16, 16, kernel_size=(4, 1), padding="same"), lrelu(),
+            nn.Conv2d(16, 16, kernel_size=(1, 2), stride=(1, 2)), lrelu(), bn(),
+            nn.Conv2d(16, 16, kernel_size=(4, 1), padding="same"), lrelu(), bn(),
+            nn.Conv2d(16, 16, kernel_size=(4, 1), padding="same"), lrelu(), bn(),
             # Group 3
-            nn.Conv2d(16, 16, kernel_size=(1, 10)), lrelu(),
-            nn.Conv2d(16, 16, kernel_size=(4, 1), padding="same"), lrelu(),
-            nn.Conv2d(16, 16, kernel_size=(4, 1), padding="same"), lrelu(),
+            nn.Conv2d(16, 16, kernel_size=(1, 10)), lrelu(), bn(),
+            nn.Conv2d(16, 16, kernel_size=(4, 1), padding="same"), lrelu(), bn(),
+            nn.Conv2d(16, 16, kernel_size=(4, 1), padding="same"), lrelu(), bn(),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -89,6 +90,21 @@ class DeepLOB(nn.Module):
         self.inception = InceptionModule()
         self.lstm = nn.LSTM(input_size=96, hidden_size=64, batch_first=True)
         self.fc = nn.Linear(64, num_classes)
+        self._init_conv_weights()
+
+    def _init_conv_weights(self):
+        """Re-initialise Conv2d layers for LeakyReLU(0.01).
+
+        PyTorch's default kaiming_uniform uses a=sqrt(5), calibrated for a slope of
+        ~2.24 — not 0.01.  With the wrong slope, each of the 9 conv layers attenuates
+        activations by ~0.41×, leaving std≈0.05 at the conv block output and causing
+        vanishing gradients (~28,000× weaker at layer 0 vs the FC).  Using a=0.01
+        matches the actual activation and preserves variance across all 9 layers.
+        """
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight, a=0.01, nonlinearity='leaky_relu')
+                nn.init.zeros_(m.bias)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """x: (batch, 100, 40) or (batch, 1, 100, 40) — channel dim added if missing."""

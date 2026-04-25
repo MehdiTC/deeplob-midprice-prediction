@@ -2,6 +2,23 @@
 
 ---
 
+## 2026-04-25 — DeepLOB Training Bug Fix
+
+**Problem**: DeepLOB always predicted class 1 (stationary). val_F1 stuck at 0.5941 from epoch 1, Cohen's kappa = 0.000 on test. SimpleLSTM trained fine; DeepLOB did not. Root cause was two compounding issues in `src/models/deeplob.py`:
+
+**Bug 1 — Wrong Conv2d initialization (primary):** PyTorch's default `Conv2d` init uses `kaiming_uniform_(a=sqrt(5))`, calibrated for a nonlinearity with slope ≈ 2.24. Our network uses `LeakyReLU(0.01)`. This caused each of the 9 conv layers to attenuate activations by ~0.41×, leaving the conv block output at std=0.050 instead of ~1.0. The gradient ratio across the network was 20,900× (fc.bias = 0.198, first conv layer = 9.4e-6) — the conv block was effectively not training at all. Fix: `_init_conv_weights()` in `DeepLOB.__init__` reinitialises all `Conv2d` layers with `kaiming_normal_(a=0.01, nonlinearity='leaky_relu')`.
+
+**Bug 2 — No batch normalisation (secondary):** Even with correct init, the non-symmetric LeakyReLU outputs accumulate positive bias across 9 layers, preventing variance from being maintained. Fix: `nn.BatchNorm2d(16)` added after each `LeakyReLU` in `ConvBlock.layers`. This brought conv block output std from 0.042 → 1.000 and the gradient ratio from 70× → 1.5×.
+
+**Also added**: class weights via `compute_class_weight('balanced', ...)` passed to `nn.CrossEntropyLoss(weight=...)` in `train_neural` and the DeepLOB training loop in notebook 03. This gives the loss function stronger signal on minority (up/down) classes.
+
+- Diagnostic results after all fixes: conv block std=1.000, grad ratio=1.5×, first conv grad=0.146 (up from 9.4e-6)
+- Total params: 61,235 (was 60,947; +288 from 9 BN layers)
+- Files modified: `src/models/deeplob.py`, `src/train.py`, `notebooks/03_deeplob.ipynb`
+- Next: re-run cell 14 on Duke server, confirm val F1 moving above 0.60 within 5 epochs for k=1
+
+---
+
 ## 2026-04-25 — DataLoader Performance Fix
 
 - **Problem**: DeepLOB was taking 148s/epoch on an RTX A5000 — GPU sitting idle waiting for data
