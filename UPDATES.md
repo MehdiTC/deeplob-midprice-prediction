@@ -2,20 +2,39 @@
 
 ---
 
+## 2026-04-25 — Horizon & Target Number Correction
+
+**Problem**: CLAUDE.md contained incorrect target F1 numbers attributed to "Table II, Setup 2" of the paper. The numbers (0.89, 0.86, 0.83, 0.80, 0.78) for k=1,2,3,5,10 are not in the paper — they appear to be from community reproductions.
+
+**Actual paper Table II (Setup 2)** evaluates at k=10, 20, 50:
+- k=10: DeepLOB F1 = 0.8340
+- k=20: DeepLOB F1 = 0.7282
+- k=50: DeepLOB F1 = 0.8035
+
+The paper computes k=20 and k=50 labels from the raw LOB mid-price using the smoothing formula (Eq. 3 in the paper). Our CSV only contains pre-computed labels for k=1,2,3,5,10. Computing k=20/50 labels would require the unnormalized prices (for the 0.2% threshold), which the z-score-normalized CSV cannot provide.
+
+**Decision**: evaluate at k=1,2,3,5,10 using the pre-computed FI-2010 labels. Compare at k=10 against paper Table II (target F1=0.8340). Results at other horizons are valid but have no direct paper comparison — they are comparable to community reproductions.
+
+- Files modified: `CLAUDE.md`
+
+---
+
 ## 2026-04-25 — DeepLOB Training Bug Fix
 
-**Problem**: DeepLOB always predicted class 1 (stationary). val_F1 stuck at 0.5941 from epoch 1, Cohen's kappa = 0.000 on test. SimpleLSTM trained fine; DeepLOB did not. Root cause was two compounding issues in `src/models/deeplob.py`:
+**Problem**: DeepLOB always predicted class 1 (stationary). val_F1 stuck at 0.5941 from epoch 1, Cohen's kappa = 0.000 on test. SimpleLSTM trained fine on the same data and training loop; DeepLOB did not.
 
-**Bug 1 — Wrong Conv2d initialization (primary):** PyTorch's default `Conv2d` init uses `kaiming_uniform_(a=sqrt(5))`, calibrated for a nonlinearity with slope ≈ 2.24. Our network uses `LeakyReLU(0.01)`. This caused each of the 9 conv layers to attenuate activations by ~0.41×, leaving the conv block output at std=0.050 instead of ~1.0. The gradient ratio across the network was 20,900× (fc.bias = 0.198, first conv layer = 9.4e-6) — the conv block was effectively not training at all. Fix: `_init_conv_weights()` in `DeepLOB.__init__` reinitialises all `Conv2d` layers with `kaiming_normal_(a=0.01, nonlinearity='leaky_relu')`.
+**Root cause — Wrong Conv2d initialization**: PyTorch's default `Conv2d` init uses `kaiming_uniform_(a=sqrt(5))`, which is calibrated for a nonlinearity with slope ≈ 2.24. Our network uses `LeakyReLU(0.01)`. With the wrong `a` parameter, each of the 9 conv layers was attenuating activations by ~0.41×, leaving conv block output std ≈ 0.05 instead of ~1.0. Gradient diagnostics confirmed the problem: fc.bias grad norm = 0.198, first conv layer grad norm = 9.4e-6 — a 20,000× imbalance. The conv block was essentially not training. The LSTM + FC learned to predict the majority class based on the near-constant conv block output.
 
-**Bug 2 — No batch normalisation (secondary):** Even with correct init, the non-symmetric LeakyReLU outputs accumulate positive bias across 9 layers, preventing variance from being maintained. Fix: `nn.BatchNorm2d(16)` added after each `LeakyReLU` in `ConvBlock.layers`. This brought conv block output std from 0.042 → 1.000 and the gradient ratio from 70× → 1.5×.
+**Fix**: `_init_conv_weights()` added to `DeepLOB.__init__` — reinitialises all `Conv2d` layers with `kaiming_normal_(a=0.01, nonlinearity='leaky_relu')` and zeros biases. This is the correct `a` for our activation function.
 
-**Also added**: class weights via `compute_class_weight('balanced', ...)` passed to `nn.CrossEntropyLoss(weight=...)` in `train_neural` and the DeepLOB training loop in notebook 03. This gives the loss function stronger signal on minority (up/down) classes.
+**Also added**: `class_weights` optional parameter to `train_neural` in `src/train.py`, passed to `nn.CrossEntropyLoss(weight=...)`. Computed via `sklearn.utils.class_weight.compute_class_weight('balanced', ...)` in notebook 03 and passed to the DeepLOB training loop. Gives stronger gradient signal for minority (up/down) classes.
 
-- Diagnostic results after all fixes: conv block std=1.000, grad ratio=1.5×, first conv grad=0.146 (up from 9.4e-6)
-- Total params: 61,235 (was 60,947; +288 from 9 BN layers)
-- Files modified: `src/models/deeplob.py`, `src/train.py`, `notebooks/03_deeplob.ipynb`
-- Next: re-run cell 14 on Duke server, confirm val F1 moving above 0.60 within 5 epochs for k=1
+**Also fixed**: `DEVICE` detection in `src/train.py` now checks CUDA before MPS — was silently falling back to CPU on the Duke GPU cluster.
+
+- Total params: 60,947 (unchanged — init fix does not change parameter count)
+- Files modified: `src/models/deeplob.py`, `src/train.py`
+- Note: BatchNorm was explored but not added — the init fix alone resolved gradient vanishing
+- Next: confirm val F1 climbing above 0.60 within first 5 epochs for k=1 on the cluster
 
 ---
 

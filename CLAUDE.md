@@ -146,15 +146,24 @@ All final numbers reported on test set only (days 8–10). Evaluate every model 
 - XGBoost/LR: with vs. without class reweighting → documents imbalance handling value
 - Simple LSTM vs. DeepLOB → documents value of CNN spatial extraction
 
-**Target numbers to reproduce** (Table II, Setup 2 from paper):
+**Comparison target from paper** (Table II, Setup 2):
 
-| k  | DeepLOB F1 |
-|----|------------|
-| 1  | 0.89       |
-| 2  | 0.86       |
-| 3  | 0.83       |
-| 5  | 0.80       |
-| 10 | 0.78       |
+Paper Table II evaluates at k = 10, 20, 50 — horizons that require label recomputation from
+raw LOB mid-prices using the smoothing formula. Our CSV only contains pre-computed labels for
+k = 1, 2, 3, 5, 10 (the standard FI-2010 benchmark). We cannot compute k = 20 or k = 50
+labels because the z-score-normalized CSV does not preserve the absolute price scale needed
+for the 0.2% threshold. We therefore evaluate at k = 1, 2, 3, 5, 10 and compare at k = 10,
+which appears directly in the paper.
+
+| k   | Source                        | DeepLOB F1 |
+|-----|-------------------------------|------------|
+| 10  | Paper Table II, Setup 2       | 0.8340     |
+| 20  | Paper Table II, Setup 2       | 0.7282     |
+| 50  | Paper Table II, Setup 2       | 0.8035     |
+
+Our direct comparison point is **k = 10 → target F1 ≈ 0.83**. Results at k = 1, 2, 3, 5
+are not in the paper but are comparable to community reproductions that also use the
+pre-computed FI-2010 labels.
 
 ---
 

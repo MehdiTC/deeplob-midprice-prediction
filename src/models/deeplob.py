@@ -1,7 +1,8 @@
 """PyTorch reimplementation of the DeepLOB architecture (Zhang et al., 2019).
 
 Reference Keras implementation: data/raw/DeepLOB.ipynb
-Parameter count should equal 60,691 (verifiable with sum(p.numel() for p in DeepLOB().parameters())).
+Parameter count: 60,947. The paper reports 60,691 (Keras); the 256 difference is PyTorch's
+nn.LSTM having two bias vectors (b_ih + b_hh, 4 gates × 64 units) vs Keras's one.
 """
 
 import torch
