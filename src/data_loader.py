@@ -127,5 +127,4 @@ def make_loader(dataset: Dataset, batch_size: int = 32, shuffle: bool = False) -
         shuffle=shuffle,
         num_workers=4,
         pin_memory=True,
-        persistent_workers=True,
     )
