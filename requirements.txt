@@ -7,4 +7,4 @@ matplotlib
 seaborn
 jupyter
 tqdm
-pip freeze > requirements.txt
+scipy
