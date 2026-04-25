@@ -2,6 +2,16 @@
 
 ---
 
+## 2026-04-25 — DataLoader Performance Fix
+
+- **Problem**: DeepLOB was taking 148s/epoch on an RTX A5000 — GPU sitting idle waiting for data
+- **Fix**: Updated `make_loader` in `src/data_loader.py` — added `num_workers=4`, `pin_memory=True`, `persistent_workers=True`
+- **Batch size**: increased `BATCH_SIZE` from 32 → 256 in `notebooks/03_deeplob.ipynb` (A5000 has 24GB VRAM, DeepLOB has only 60k params)
+- **Before/after**: 148s/epoch → target 15–25s/epoch
+- Files modified: `src/data_loader.py`, `notebooks/03_deeplob.ipynb`
+
+---
+
 ## 2026-04-23 — Data Pipeline & Full src/ Skeleton
 
 ### What was built

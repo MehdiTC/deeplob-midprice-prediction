@@ -120,6 +120,12 @@ class SnapshotDataset(Dataset):
 
 
 def make_loader(dataset: Dataset, batch_size: int = 32, shuffle: bool = False) -> DataLoader:
-    """Wrap a Dataset in a DataLoader with sensible defaults."""
-    return DataLoader(dataset, batch_size=batch_size, shuffle=shuffle,
-                      num_workers=0, pin_memory=False)
+    """Wrap a Dataset in a DataLoader with multi-process data loading for GPU training."""
+    return DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        num_workers=4,
+        pin_memory=True,
+        persistent_workers=True,
+    )
