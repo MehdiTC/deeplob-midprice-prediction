@@ -25,20 +25,19 @@ class ConvBlock(nn.Module):
         super().__init__()
         lrelu = lambda: nn.LeakyReLU(negative_slope=0.01)
 
-        bn = lambda: nn.BatchNorm2d(16)
         self.layers = nn.Sequential(
             # Group 1
-            nn.Conv2d(1,  16, kernel_size=(1, 2), stride=(1, 2)), lrelu(), bn(),
-            nn.Conv2d(16, 16, kernel_size=(4, 1), padding="same"), lrelu(), bn(),
-            nn.Conv2d(16, 16, kernel_size=(4, 1), padding="same"), lrelu(), bn(),
+            nn.Conv2d(1,  16, kernel_size=(1, 2), stride=(1, 2)), lrelu(),
+            nn.Conv2d(16, 16, kernel_size=(4, 1), padding="same"), lrelu(),
+            nn.Conv2d(16, 16, kernel_size=(4, 1), padding="same"), lrelu(),
             # Group 2
-            nn.Conv2d(16, 16, kernel_size=(1, 2), stride=(1, 2)), lrelu(), bn(),
-            nn.Conv2d(16, 16, kernel_size=(4, 1), padding="same"), lrelu(), bn(),
-            nn.Conv2d(16, 16, kernel_size=(4, 1), padding="same"), lrelu(), bn(),
+            nn.Conv2d(16, 16, kernel_size=(1, 2), stride=(1, 2)), lrelu(),
+            nn.Conv2d(16, 16, kernel_size=(4, 1), padding="same"), lrelu(),
+            nn.Conv2d(16, 16, kernel_size=(4, 1), padding="same"), lrelu(),
             # Group 3
-            nn.Conv2d(16, 16, kernel_size=(1, 10)), lrelu(), bn(),
-            nn.Conv2d(16, 16, kernel_size=(4, 1), padding="same"), lrelu(), bn(),
-            nn.Conv2d(16, 16, kernel_size=(4, 1), padding="same"), lrelu(), bn(),
+            nn.Conv2d(16, 16, kernel_size=(1, 10)), lrelu(),
+            nn.Conv2d(16, 16, kernel_size=(4, 1), padding="same"), lrelu(),
+            nn.Conv2d(16, 16, kernel_size=(4, 1), padding="same"), lrelu(),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
