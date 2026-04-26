@@ -5,7 +5,7 @@ Rules:
 - Signal 0 (down) → short 1 share at t+5, hold until signal 2 (up) appears → cover
 - Signal 1 (stat) → do nothing
 - Open positions are force-closed at supplied segment boundaries.
-- No transaction costs; mid-price execution throughout.
+- Transaction costs default to zero; mid-price execution throughout.
 
 FI-2010 features are z-score normalized, so the resulting P&L is in normalized mid-price
 units. The public CSV does not provide reliable day identifiers after concatenation, so
@@ -54,6 +54,8 @@ def run_backtest(
     mid_prices: np.ndarray,
     boundaries: list[int] | None = None,
     slippage_steps: int = 5,
+    exit_slippage_steps: int = 0,
+    transaction_cost: float = 0.0,
 ) -> dict:
     """Simulate the trading rule on model predictions.
 
@@ -62,10 +64,13 @@ def run_backtest(
         mid_prices:      float array of shape (N,) — normalized mid-price per window
         boundaries:      segment start/end indices; inferred from mid-price jumps if omitted
         slippage_steps:  buy/sell executed this many steps after signal (default 5)
+        exit_slippage_steps: close/cover executed this many steps after reversal signal
+        transaction_cost: normalized-price cost per side, subtracted on entry and exit
 
     Returns dict with:
         segment_pnl:     list of proxy P&L per contiguous segment
         cumulative_pnl:  ndarray of shape (N,) cumulative PnL per step
+        trade_pnl:       list of completed round-trip P&L values after costs
         n_trades:        total number of completed round-trips
         boundaries:      segment boundaries used by the simulation
     """
@@ -79,7 +84,9 @@ def run_backtest(
         raise ValueError("boundaries must start at 0 and end at len(predictions)")
 
     pnl_per_step = np.zeros(N, dtype=np.float64)
+    trade_pnl = []
     n_trades = 0
+    round_trip_cost = 2.0 * transaction_cost
 
     for segment_idx in range(len(boundaries) - 1):
         start, end = boundaries[segment_idx], boundaries[segment_idx + 1]
@@ -104,17 +111,25 @@ def run_backtest(
                     i = exec_i + 1
                     continue
             elif position == 1 and sig == 0:         # close long on down signal
-                exit_price = mid_prices[i]
-                trade_pnl = exit_price - entry_price
-                pnl_per_step[i] += trade_pnl
+                exec_i = min(i + exit_slippage_steps, end - 1)
+                exit_price = mid_prices[exec_i]
+                pnl = exit_price - entry_price - round_trip_cost
+                pnl_per_step[exec_i] += pnl
+                trade_pnl.append(float(pnl))
                 position = 0
                 n_trades += 1
+                i = exec_i + 1
+                continue
             elif position == -1 and sig == 2:        # close short on up signal
-                exit_price = mid_prices[i]
-                trade_pnl = entry_price - exit_price
-                pnl_per_step[i] += trade_pnl
+                exec_i = min(i + exit_slippage_steps, end - 1)
+                exit_price = mid_prices[exec_i]
+                pnl = entry_price - exit_price - round_trip_cost
+                pnl_per_step[exec_i] += pnl
+                trade_pnl.append(float(pnl))
                 position = 0
                 n_trades += 1
+                i = exec_i + 1
+                continue
 
             i += 1
 
@@ -122,10 +137,11 @@ def run_backtest(
         if position != 0:
             exit_price = mid_prices[end - 1]
             if position == 1:
-                trade_pnl = exit_price - entry_price
+                pnl = exit_price - entry_price - round_trip_cost
             else:
-                trade_pnl = entry_price - exit_price
-            pnl_per_step[end - 1] += trade_pnl
+                pnl = entry_price - exit_price - round_trip_cost
+            pnl_per_step[end - 1] += pnl
+            trade_pnl.append(float(pnl))
             position = 0
             n_trades += 1
 
@@ -138,6 +154,7 @@ def run_backtest(
     return {
         "segment_pnl": segment_pnl,
         "cumulative_pnl": cumulative_pnl,
+        "trade_pnl": trade_pnl,
         "n_trades": n_trades,
         "boundaries": boundaries,
     }

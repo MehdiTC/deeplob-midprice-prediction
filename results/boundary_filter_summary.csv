@@ -1,0 +1,2 @@
+split,rows,window_size,inferred_row_boundaries,unfiltered_windows,boundary_filtered_windows,removed_cross_boundary_windows,filtered_series_boundaries
+test,31937,100,"[1888, 7016, 12738, 18559]",31838,31442,396,"[0, 1789, 6818, 12441, 18163, 31442]"

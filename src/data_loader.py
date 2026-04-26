@@ -54,6 +54,34 @@ def find_stock_boundaries(X: np.ndarray, n_stocks: int = 5) -> np.ndarray:
     return np.sort(top_idx + 1).astype(np.int64)
 
 
+def valid_window_starts(
+    n_rows: int,
+    window_size: int = 100,
+    boundaries: np.ndarray | None = None,
+) -> np.ndarray:
+    """Return start indices for windows that do not cross stock/segment boundaries.
+
+    Boundaries are row indices where a new stock/segment begins. A window ending at
+    `boundary - 1` or starting exactly at `boundary` is valid; only windows that
+    contain rows from both sides of a boundary are removed.
+    """
+    if n_rows < window_size:
+        return np.array([], dtype=np.int64)
+
+    starts = np.arange(n_rows - window_size + 1, dtype=np.int64)
+    if boundaries is None:
+        return starts
+
+    internal_boundaries = np.asarray(boundaries, dtype=np.int64)
+    internal_boundaries = internal_boundaries[
+        (internal_boundaries > 0) & (internal_boundaries < n_rows)
+    ]
+    valid = np.ones(len(starts), dtype=bool)
+    for boundary in internal_boundaries:
+        valid &= ~((starts < boundary) & (boundary < starts + window_size))
+    return starts[valid]
+
+
 def make_windows(
     X: np.ndarray,
     Y: np.ndarray,
@@ -66,11 +94,9 @@ def make_windows(
     Returns (windows, labels): float32 array of shape (N, window_size, 40) and int64 array
     of shape (N,).
     """
-    boundary_set = set(boundaries.tolist()) if boundaries is not None else set()
+    starts = valid_window_starts(len(X), window_size=window_size, boundaries=boundaries)
     windows, labels = [], []
-    for i in range(len(X) - window_size + 1):
-        if any(i <= b < i + window_size for b in boundary_set):
-            continue
+    for i in starts:
         windows.append(X[i : i + window_size])
         labels.append(Y[i + window_size - 1, horizon_idx])
     return np.array(windows, dtype=np.float32), np.array(labels, dtype=np.int64)
@@ -83,23 +109,33 @@ class SlidingWindowDataset(Dataset):
     at the last position of the window for a chosen prediction horizon.
     """
 
-    def __init__(self, X: np.ndarray, Y: np.ndarray, window: int = 100, horizon_idx: int = 0):
+    def __init__(
+        self,
+        X: np.ndarray,
+        Y: np.ndarray,
+        window: int = 100,
+        horizon_idx: int = 0,
+        boundaries: np.ndarray | None = None,
+    ):
         """
         Args:
             X: float32 array of shape (N, 40)
             Y: int64 array of shape (N, 5)
             window: number of consecutive snapshots per sample
             horizon_idx: which of the 5 horizons (0–4 → k=1,2,3,5,10) to use as label
+            boundaries: optional row indices where a new stock/segment begins
         """
         self.X = torch.from_numpy(X)
         self.Y = torch.from_numpy(Y[:, horizon_idx])
         self.window = window
+        self.starts = valid_window_starts(len(X), window_size=window, boundaries=boundaries)
 
     def __len__(self):
-        return len(self.X) - self.window
+        return len(self.starts)
 
     def __getitem__(self, i):
-        return self.X[i : i + self.window], self.Y[i + self.window - 1]
+        start = self.starts[i]
+        return self.X[start : start + self.window], self.Y[start + self.window - 1]
 
 
 class SnapshotDataset(Dataset):
