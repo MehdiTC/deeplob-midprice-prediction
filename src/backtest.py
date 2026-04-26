@@ -1,19 +1,23 @@
-"""Trading backtest simulation matching the setup in Zhang et al. (2019) Section V.D.
+"""Backtest-style proxy simulation for FI-2010 DeepLOB predictions.
 
 Rules:
 - Signal 2 (up)   → buy 1 share at t+5 (slippage), hold until signal 0 (down) appears → sell
 - Signal 0 (down) → short 1 share at t+5, hold until signal 2 (up) appears → cover
 - Signal 1 (stat) → do nothing
-- All open positions are closed at the end of each trading day at the prevailing mid-price.
+- Open positions are force-closed at supplied segment boundaries.
 - No transaction costs; mid-price execution throughout.
+
+FI-2010 features are z-score normalized, so the resulting P&L is in normalized mid-price
+units. The public CSV does not provide reliable day identifiers after concatenation, so
+the default helper detects contiguous stock/segment boundaries and avoids carrying a
+position across them.
 """
 
 import numpy as np
 from scipy import stats
 
 
-# Test set: 31,837 windows across 3 trading days (equal split: ~10,612 per day)
-DEFAULT_DAY_BOUNDARIES = [0, 10612, 21224, 31837]
+DEFAULT_N_SEGMENTS = 5
 
 
 def extract_mid_prices(X_raw: np.ndarray) -> np.ndarray:
@@ -30,35 +34,57 @@ def extract_mid_prices(X_raw: np.ndarray) -> np.ndarray:
     return (X_raw[:, 0] + X_raw[:, 2]) / 2.0
 
 
+def infer_segment_boundaries(mid_prices: np.ndarray, n_segments: int = DEFAULT_N_SEGMENTS) -> list[int]:
+    """Infer contiguous stock/segment boundaries from jumps in normalized mid-price."""
+    if n_segments < 1:
+        raise ValueError("n_segments must be at least 1")
+    if len(mid_prices) == 0:
+        return [0]
+    if n_segments == 1 or len(mid_prices) == 1:
+        return [0, len(mid_prices)]
+
+    n_cuts = min(n_segments - 1, len(mid_prices) - 1)
+    diffs = np.abs(np.diff(mid_prices))
+    cuts = np.argpartition(diffs, -n_cuts)[-n_cuts:] + 1
+    return [0, *np.sort(cuts).astype(int).tolist(), len(mid_prices)]
+
+
 def run_backtest(
     predictions: np.ndarray,
     mid_prices: np.ndarray,
-    day_boundaries: list = DEFAULT_DAY_BOUNDARIES,
+    boundaries: list[int] | None = None,
     slippage_steps: int = 5,
 ) -> dict:
-    """Simulate the paper's trading strategy on model predictions.
+    """Simulate the trading rule on model predictions.
 
     Args:
         predictions:     integer array of shape (N,) with values 0/1/2
-        mid_prices:      float array of shape (N,) — mid-price per window
-        day_boundaries:  list of window indices marking day start/end (inclusive)
-                         e.g. [0, 10612, 21224, 31837] for 3 days
+        mid_prices:      float array of shape (N,) — normalized mid-price per window
+        boundaries:      segment start/end indices; inferred from mid-price jumps if omitted
         slippage_steps:  buy/sell executed this many steps after signal (default 5)
 
     Returns dict with:
-        daily_pnl:       list of PnL per day
+        segment_pnl:     list of proxy P&L per contiguous segment
         cumulative_pnl:  ndarray of shape (N,) cumulative PnL per step
         n_trades:        total number of completed round-trips
+        boundaries:      segment boundaries used by the simulation
     """
     N = len(predictions)
+    if len(mid_prices) != N:
+        raise ValueError(f"predictions and mid_prices must have same length, got {N} and {len(mid_prices)}")
+
+    if boundaries is None:
+        boundaries = infer_segment_boundaries(mid_prices)
+    if boundaries[0] != 0 or boundaries[-1] != N:
+        raise ValueError("boundaries must start at 0 and end at len(predictions)")
+
     pnl_per_step = np.zeros(N, dtype=np.float64)
     n_trades = 0
 
-    for day_idx in range(len(day_boundaries) - 1):
-        start, end = day_boundaries[day_idx], day_boundaries[day_idx + 1]
+    for segment_idx in range(len(boundaries) - 1):
+        start, end = boundaries[segment_idx], boundaries[segment_idx + 1]
         position = 0          # +1 = long, -1 = short, 0 = flat
         entry_price = 0.0
-        entry_step = -1
 
         i = start
         while i < end:
@@ -69,14 +95,12 @@ def run_backtest(
                     exec_i = min(i + slippage_steps, end - 1)
                     entry_price = mid_prices[exec_i]
                     position = 1
-                    entry_step = exec_i
                     i = exec_i + 1
                     continue
                 elif sig == 0:                        # down signal → go short
                     exec_i = min(i + slippage_steps, end - 1)
                     entry_price = mid_prices[exec_i]
                     position = -1
-                    entry_step = exec_i
                     i = exec_i + 1
                     continue
             elif position == 1 and sig == 0:         # close long on down signal
@@ -94,7 +118,7 @@ def run_backtest(
 
             i += 1
 
-        # Force-close any open position at end of day
+        # Force-close any open position at the segment boundary.
         if position != 0:
             exit_price = mid_prices[end - 1]
             if position == 1:
@@ -106,19 +130,20 @@ def run_backtest(
             n_trades += 1
 
     cumulative_pnl = np.cumsum(pnl_per_step)
-    daily_pnl = [
-        float(pnl_per_step[day_boundaries[d] : day_boundaries[d + 1]].sum())
-        for d in range(len(day_boundaries) - 1)
+    segment_pnl = [
+        float(pnl_per_step[boundaries[d] : boundaries[d + 1]].sum())
+        for d in range(len(boundaries) - 1)
     ]
 
     return {
-        "daily_pnl": daily_pnl,
+        "segment_pnl": segment_pnl,
         "cumulative_pnl": cumulative_pnl,
         "n_trades": n_trades,
+        "boundaries": boundaries,
     }
 
 
-def compute_tstat(daily_pnl: list) -> float:
-    """Return t-statistic testing whether mean daily PnL is significantly > 0."""
-    result = stats.ttest_1samp(daily_pnl, 0.0)
+def compute_tstat(segment_pnl: list) -> float:
+    """Return t-statistic testing whether mean segment P&L is significantly > 0."""
+    result = stats.ttest_1samp(segment_pnl, 0.0)
     return float(result.statistic)

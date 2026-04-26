@@ -16,7 +16,7 @@ prediction horizons (k = 1, 2, 3, 5, 10 LOB events ahead) to quantify how much e
 layer of complexity contributes to predictive performance. The study includes a 
 boundary-aware sliding window pipeline that corrects a methodological gap in the 
 original reference implementation, class-imbalance handling via weighted cross-entropy, 
-a backtest simulation following the paper's trading rules, inference throughput 
+a normalized-price proxy backtest following the paper's trading rules, inference throughput 
 measurements, and ablation studies isolating the value of temporal modeling and CNN 
 spatial extraction.
 
@@ -94,7 +94,7 @@ deeplob-midprice-prediction/
 │   ├── features.py       # engineered features
 │   ├── train.py          # training loop, early stopping, checkpoints
 │   ├── evaluate.py       # metrics, throughput, confusion matrices
-│   ├── backtest.py       # P&L simulation
+│   ├── backtest.py       # normalized proxy P&L simulation
 │   └── models/
 │       ├── baseline.py
 │       ├── logistic.py

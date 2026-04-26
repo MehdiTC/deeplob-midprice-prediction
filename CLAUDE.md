@@ -137,9 +137,9 @@ All final numbers reported on test set only (days 8–10). Evaluate every model 
 **Backtest simulation** (matching paper Section V.D):
 - On +1 signal: buy at t+5 (slippage), hold until -1 appears to sell
 - On 0 signal: do nothing
-- Close all positions end of day
+- Close all positions at detected contiguous stock/segment boundaries
 - Mid-price execution, no transaction costs
-- Report cumulative P&L and t-statistic on daily profits
+- Report cumulative proxy P&L and t-statistic on contiguous stock/segment profits
 
 **Ablations**:
 - XGBoost: raw features vs. raw + engineered features → documents feature engineering value
@@ -217,7 +217,7 @@ pre-computed FI-2010 labels.
 - Unified results table: all models × all horizons
 - Inference throughput for all models
 - Confusion matrices at k=10 for all models
-- Backtest simulation with cumulative P&L plot and t-statistics
+- Backtest-style proxy simulation with cumulative normalized P&L plot and segment t-statistics
 - Ablation table
 - Error analysis: hardest horizons, dominant error class, failure patterns
 
