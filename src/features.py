@@ -1,4 +1,8 @@
-"""Engineered features derived from the 40 raw LOB columns."""
+"""Engineered features derived from the 40 raw LOB columns.
+
+AI attribution: this file contains AI-assisted implementation reviewed, debugged,
+and validated by the author; see ATTRIBUTION.md.
+"""
 
 import numpy as np
 

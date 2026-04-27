@@ -19,7 +19,7 @@ pip install -r requirements.txt
 
 The FI-2010 dataset is not included in this repository. To obtain it:
 
-1. Download the FI-2010 benchmark from the original authors or a public mirror (e.g https://www.kaggle.com/datasets/freemanone/fi2010?resource=download)
+1. Download the FI-2010 benchmark from the original authors or a public mirror (e.g. https://www.kaggle.com/datasets/freemanone/fi2010?resource=download)
 2. Place the files as:
    - `data/raw/FI2010_train.csv` — days 1–7 (362,400 rows × 149 columns)
    - `data/raw/FI2010_test.csv` — days 8–10 (31,937 rows × 149 columns)

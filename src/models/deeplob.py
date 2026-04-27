@@ -3,6 +3,9 @@
 Reference Keras implementation: data/raw/DeepLOB.ipynb
 Parameter count: 60,947. The paper reports 60,691 (Keras); the 256 difference is PyTorch's
 nn.LSTM having two bias vectors (b_ih + b_hh, 4 gates × 64 units) vs Keras's one.
+
+AI attribution: this file contains AI-assisted implementation reviewed, debugged,
+and validated by the author; see ATTRIBUTION.md.
 """
 
 import torch

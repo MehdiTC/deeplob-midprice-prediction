@@ -11,6 +11,9 @@ FI-2010 features are z-score normalized, so the resulting P&L is in normalized m
 units. The public CSV does not provide reliable day identifiers after concatenation, so
 the default helper detects contiguous stock/segment boundaries and avoids carrying a
 position across them.
+
+AI attribution: this file contains AI-assisted implementation reviewed, debugged,
+and validated by the author; see ATTRIBUTION.md.
 """
 
 import numpy as np

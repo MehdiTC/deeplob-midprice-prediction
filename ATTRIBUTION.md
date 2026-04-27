@@ -23,6 +23,7 @@ This project was developed with substantial assistance from Claude (Anthropic), 
 | `src/train.py` | Little to none |
 | `src/evaluate.py` | Entire file |
 | `src/backtest.py` | Substantial portions |
+| `src/boundary_eval_backtest.py` | Substantial portions |
 | `src/models/baseline.py` | None |
 | `src/models/logistic.py` | None |
 | `src/models/xgboost_model.py` | Substantial portions |

@@ -1,4 +1,8 @@
-"""XGBoost classifier with grid-search over three hyperparameter configs."""
+"""XGBoost classifier with grid-search over three hyperparameter configs.
+
+AI attribution: this file contains AI-assisted implementation reviewed, debugged,
+and validated by the author; see ATTRIBUTION.md.
+"""
 
 import numpy as np
 from sklearn.metrics import f1_score

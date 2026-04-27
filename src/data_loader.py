@@ -1,4 +1,8 @@
-"""Data loading, splitting, and PyTorch Dataset/DataLoader utilities for FI-2010."""
+"""Data loading, splitting, and PyTorch Dataset/DataLoader utilities for FI-2010.
+
+AI attribution: this file contains AI-assisted implementation reviewed, debugged,
+and validated by the author; see ATTRIBUTION.md.
+"""
 
 import numpy as np
 import pandas as pd
@@ -139,7 +143,7 @@ class SlidingWindowDataset(Dataset):
 
 
 class SnapshotDataset(Dataset):
-    """Yields (snapshot, label) pairs for single-step models (LR, XGBoost placeholder).
+    """Yields (snapshot, label) pairs for single-step models (LR, XGBoost).
 
     Each sample is one LOB snapshot and the label for a chosen prediction horizon.
     """

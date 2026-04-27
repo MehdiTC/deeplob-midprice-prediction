@@ -1,4 +1,8 @@
-"""Evaluation metrics, throughput measurement, and results-table builder."""
+"""Evaluation metrics, throughput measurement, and results-table builder.
+
+AI attribution: this file contains AI-assisted implementation reviewed, debugged,
+and validated by the author; see ATTRIBUTION.md.
+"""
 
 import time
 from typing import Callable

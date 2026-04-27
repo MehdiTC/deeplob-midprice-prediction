@@ -1,8 +1,6 @@
-# DeepLOB: Mid-Price Movement Prediction on Limit Order Books
+# DeepLOB Revisited: Benchmarking Deep Learning for Limit Order Book Prediction
 
-A benchmark study comparing classical ML and deep learning for mid-price movement 
-prediction on limit order book data, with a PyTorch reimplementation of the DeepLOB 
-architecture (Zhang, Zohren, Roberts — IEEE TSP 2019).
+A reproduction and extension of the DeepLOB study for short-horizon mid-price movement prediction, comparing classical ML, LSTM, and CNN-LSTM models on the FI-2010 limit order book benchmark.
 
 ---
 
@@ -48,8 +46,8 @@ without retraining.
 
 ## Video Links
 
-- **Demo (3–5 min):** [TODO]
-- **Technical Walkthrough (5–10 min):** [TODO]
+- **Demo (3-5 min):** [YouTube](https://youtu.be/H494RR_9uJI)
+- **Technical Walkthrough (5-10 min):** [YouTube](https://youtu.be/jPx-qEq_Wrs)
 
 ---
 
@@ -85,6 +83,14 @@ results are in `notebooks/04_evaluation.ipynb`.
 
 ---
 
+## Individual Contributions
+
+This was a solo project by Mehdi Touhami Chahdi. I implemented the data pipeline,
+model training and evaluation code, DeepLOB PyTorch reproduction, ablations,
+backtest analysis, documentation, and final result synthesis.
+
+---
+
 ## Repository Structure
 
 ```
@@ -105,5 +111,8 @@ deeplob-midprice-prediction/
 ├── data/raw/             # FI2010_train.csv, FI2010_test.csv (not tracked)
 ├── models/               # trained checkpoints (lstm_k*.pt, deeplob_k*.pt)
 ├── results/              # saved figures and pkl result files
-└── videos/               # demo and technical walkthrough
+├── README.md
+├── ATTRIBUTION.md
+├── SETUP.md
+└── requirements.txt
 ```

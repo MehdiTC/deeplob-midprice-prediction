@@ -4,6 +4,9 @@ This script uses the saved LSTM and DeepLOB checkpoints; it does not retrain mod
 It removes sequence windows that cross inferred FI-2010 stock boundaries, evaluates
 classification metrics on the remaining windows, and runs backtest sensitivity checks
 for DeepLOB predictions.
+
+AI attribution: this file contains AI-assisted implementation reviewed, debugged,
+and validated by the author; see ATTRIBUTION.md.
 """
 
 from __future__ import annotations
