@@ -78,7 +78,7 @@ results are in `notebooks/04_evaluation.ipynb`.
 
 ## Individual Contributions
 
-This was a solo project by Mehdi Touhami Chahdi. I implemented the data pipeline,
+This was a solo project. I implemented the data pipeline,
 model training and evaluation code, DeepLOB PyTorch reproduction, ablations,
 backtest analysis, documentation, and final result synthesis.
 
