@@ -12,30 +12,6 @@ Ntakaris, A., Magris, M., Kanniainen, J., Gabbouj, M., & Iosifidis, A. (2018). B
 
 FI-2010 dataset: 10 days of limit order book data for 5 stocks from the Nasdaq Nordic market, with pre-computed labels at 5 prediction horizons. Accessed via the publicly available benchmark release.
 
-## AI-Generated Code
-
-This project was developed with substantial assistance from Claude (Anthropic), an AI assistant, in an agentic coding mode. AI assistance was used throughout the codebase. The following files contain significant AI-generated content:
-
-| File | AI contribution |
-|---|---|
-| `src/data_loader.py` | Entire file |
-| `src/features.py` | Entire file |
-| `src/train.py` | Little to none |
-| `src/evaluate.py` | Entire file |
-| `src/backtest.py` | Substantial portions |
-| `src/boundary_eval_backtest.py` | Substantial portions |
-| `src/models/baseline.py` | None |
-| `src/models/logistic.py` | None |
-| `src/models/xgboost_model.py` | Substantial portions |
-| `src/models/lstm_baseline.py` | None |
-| `src/models/deeplob.py` | Substantial portions |
-| `notebooks/01_eda.ipynb` | Substantial portions |
-| `notebooks/02_baselines.ipynb` | Substantial portions |
-| `notebooks/03_deeplob.ipynb` | Substantial portions |
-| `notebooks/04_evaluation.ipynb` | Substantial portions |
-
-All AI-generated code was reviewed, debugged, and validated by me, Mehdi Touhami Chahdi. Key architectural decisions (weight initialisation fix for LeakyReLU, Adam epsilon=1 from paper, patience tuning for longer horizons, class weighting for imbalanced horizons) were identified and reasoned through collaboratively. I'm fully responsible for the correctness and integrity of all submitted work.
-
 ## External Libraries
 
 - **PyTorch** (torch): neural network implementation and GPU training
