@@ -44,13 +44,6 @@ without retraining.
 
 ---
 
-## Video Links
-
-- **Demo (3-5 min):** [YouTube](https://youtu.be/H494RR_9uJI)
-- **Technical Walkthrough (5-10 min):** [YouTube](https://youtu.be/jPx-qEq_Wrs)
-
----
-
 ## Evaluation
 
 All results are weighted F1 on the held-out test set (days 8–10, ~31,900 samples).
